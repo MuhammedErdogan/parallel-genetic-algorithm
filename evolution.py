@@ -5,20 +5,21 @@ from agent import Agent
 
 
 class Evolution:
-    def __init__(self, N=10, possible_genes=['up', 'right', 'left']):
+    def __init__(self, N=10, possible_genes=None):
+
         self.N = N
-        self.possible_genes = possible_genes
+        self.possible_genes = ['up', 'right', 'left'] if possible_genes is None else possible_genes
 
         self.population = [Agent() for i in range(N)]
         self.fitness_values = [self.population[i].fitness() for i in range(N)]
 
         total_fitness = sum(self.fitness_values)
-        self.reproduction_probabiliy = [val / total_fitness for val in self.fitness_values]
+        self.reproduction_probability = [val / total_fitness for val in self.fitness_values]
 
         self.best_agent = self.population[np.argmax(self.fitness_values)]
 
     def selection(self):
-        parents = np.random.choice(self.N, size=2, p=self.reproduction_probabiliy)
+        parents = np.random.choice(self.N, size=2, p=self.reproduction_probability)
         return parents
 
     def crossover(self, parent0, parent1):
@@ -48,7 +49,7 @@ class Evolution:
 
         self.fitness_values = [self.population[i].fitness() for i in range(self.N)]
         total_fitness = sum(self.fitness_values)
-        self.reproduction_probabiliy = [val / total_fitness for val in self.fitness_values]
+        self.reproduction_probability = [val / total_fitness for val in self.fitness_values]
         self.best_agent = self.population[np.argmax(self.fitness_values)]
 
     def evolve(self, G=10):
