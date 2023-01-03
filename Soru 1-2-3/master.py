@@ -3,14 +3,14 @@ import pickle
 import socket
 from threading import Thread, Lock
 
-tryCount = 10
-connectedConns = []
-threadLock = Lock()
-receivedPopulation = []
+try_count = 10
+connected_conns = []
+thread_lock = Lock()
+received_population = []
 generation = None
-evolutionCount = 0
-totalEvolutionCount = 0
-currentBestScore = 0
+evaluation_count = 0
+total_evaluation_count = 0
+current_best_score = 0
 foundCount = 0
 
 
@@ -24,37 +24,37 @@ class Master(Thread):
 
     @staticmethod
     def slaves_send_data(data):
-        global connectedConns
-        convertedData = pickle.dumps(data)
-        connectedConns[0].send(convertedData)
-        connectedConns[1].send(convertedData)
+        global connected_conns
+        converted_data = pickle.dumps(data)
+        connected_conns[0].send(converted_data)
+        connected_conns[1].send(converted_data)
 
     def process_pop(self):
         global generation
-        global evolutionCount
-        global currentBestScore
+        global evaluation_count
+        global current_best_score
         global foundCount
-        global totalEvolutionCount
-        global tryCount
+        global total_evaluation_count
+        global try_count
 
-        evolutionCount += 1
+        evaluation_count += 1
         generation.set_pop(self.get_sorted_pop())
 
         if generation.best_agent.fitnessScore >= 0.95:
             print(
-                f'{round(generation.best_agent.fitnessScore, 3)} is found in {evolutionCount} iteration with 2 '
+                f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration with 2 '
                 f'different mutation chance')
-            if foundCount < tryCount:
+            if foundCount < try_count:
                 foundCount += 1
-                totalEvolutionCount += evolutionCount
+                total_evaluation_count += evaluation_count
                 # reset part
-                evolutionCount = 0
+                evaluation_count = 0
                 generation = util.Generation(10)
                 self.slaves_send_data(generation.population)
                 # util.DrawFace(generation.best_agent.genome)
             else:
                 print(
-                    f'Found {tryCount} times. The Average : {totalEvolutionCount / tryCount}. iteration with 2 '
+                    f'Found {try_count} times. The Average : {total_evaluation_count / try_count}. iteration with 2 '
                     f'different mutation chance')
                 exit()
         else:
@@ -62,37 +62,37 @@ class Master(Thread):
 
     @staticmethod
     def get_sorted_pop():
-        global receivedPopulation
+        global received_population
         mergedDictionary = {}
-        for i in range(len(receivedPopulation)):
-            mergedDictionary[i] = receivedPopulation[i]
+        for i in range(len(received_population)):
+            mergedDictionary[i] = received_population[i]
 
         sorted_population = sorted(mergedDictionary.values(), key=lambda agent: agent.calculate_fitness(), reverse=True)
         sorted_population = sorted_population[:10]
-        receivedPopulation.clear()
+        received_population.clear()
 
         return sorted_population
 
     def slaves_listen(self):
-        global connectedConns
-        global receivedPopulation
-        global threadLock
+        global connected_conns
+        global received_population
+        global thread_lock
         while True:
             data = self.connection.recv(100000)
             if not data:
                 continue
-            convertedData = pickle.loads(data)
-            threadLock.acquire()
-            for _ in range(len(convertedData)):
-                receivedPopulation.append(convertedData[_])
-            threadLock.release()
-            if len(receivedPopulation) >= 20:
+            converted_data = pickle.loads(data)
+            thread_lock.acquire()
+            for _ in range(len(converted_data)):
+                received_population.append(converted_data[_])
+            thread_lock.release()
+            if len(received_population) >= 20:
                 self.process_pop()
 
     def run(self):
-        global connectedConns
+        global connected_conns
         global generation
-        if len(connectedConns) > 1:
+        if len(connected_conns) > 1:
             self.slaves_send_data(generation.population)
         self.slaves_listen()
 
@@ -107,20 +107,20 @@ if __name__ == '__main__':
     currentMutationChance = 0.9
     #standart algorithm 
     print("Standart Algorithm Started To Work")
-    while foundCount < tryCount:
+    while foundCount < try_count:
         while generation.best_agent.fitnessScore <= 0.95:
             evolved = generation.Evolve(10,currentMutationChance)
-            evolutionCount += 1
+            evaluation_count += 1
             
             
-        print(f'{round(generation.best_agent.fitnessScore,3)} is found in {evolutionCount} iteration. Mutation chance : %{currentMutationChance * 100}')
-        totalEvolutionCount += evolutionCount
+        print(f'{round(generation.best_agent.fitnessScore,3)} is found in {evaluation_count} iteration. Mutation chance : %{currentMutationChance * 100}')
+        total_evaluation_count += evaluation_count
         foundCount+=1
         #reset part
-        evolutionCount = 0
+        evaluation_count = 0
         generation = util.Generation(10)
     
-    print(f'Found {tryCount} times. The Average : {totalEvolutionCount/tryCount}')
+    print(f'Found {try_count} times. The Average : {total_evaluation_count/try_count}')
 
     """
     # Paralel versiyon
@@ -137,10 +137,10 @@ if __name__ == '__main__':
     for i in range(2):
         (conn, (ip, port)) = tcpServer.accept()
         # print('A slave connected!')
-        threadLock.acquire()
-        connectedConns.append(conn)
+        thread_lock.acquire()
+        connected_conns.append(conn)
         masterThread = Master(ip, port, conn, i)
-        threadLock.release()
+        thread_lock.release()
         masterThread.start()
         threads.append(masterThread)
 
