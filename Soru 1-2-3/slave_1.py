@@ -39,7 +39,7 @@ class Slave:
 
 
 if __name__ == '__main__':
-    mutationChance = .1
+    mutationChance = .9
     print(mutationChance, "generation creation started.")
     generation = util.Generation(10)
     c1 = Slave(mutationChance)

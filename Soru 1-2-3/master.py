@@ -40,6 +40,7 @@ class Master(Thread):
         evaluation_count += 1
         generation.set_pop(self.get_sorted_pop())
 
+        util.draw_face(generation.best_agent.genome)
         if generation.best_agent.fitnessScore >= 0.95:
             print(
                 f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration with 2 '
@@ -51,7 +52,6 @@ class Master(Thread):
                 evaluation_count = 0
                 generation = util.Generation(10)
                 self.slaves_send_data(generation.population)
-                # util.DrawFace(generation.best_agent.genome)
             else:
                 print(
                     f'Found {try_count} times. The Average : {total_evaluation_count / try_count}. iteration with 2 '
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     tcpServer.listen(2)
     for i in range(2):
         (conn, (ip, port)) = tcpServer.accept()
-        # print('A slave connected!')
+        print('A slave connected!')
         thread_lock.acquire()
         connected_conns.append(conn)
         masterThread = Master(ip, port, conn, i)
