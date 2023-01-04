@@ -43,7 +43,7 @@ class Master(Thread):
         evaluation_count += 1
         generation.set_pop(self.get_sorted_pop())
 
-        if generation.best_agent.fitnessScore > 0.925:
+        if generation.best_agent.fitnessScore > 0.975:
             util.draw_face(generation.best_agent.genome)
             print(
                 f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration with 2 '
