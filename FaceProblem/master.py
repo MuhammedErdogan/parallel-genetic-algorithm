@@ -3,18 +3,6 @@ import pickle
 import socket
 from threading import Thread, Lock
 
-try_count = 10
-connected_conns = []
-thread_lock = Lock()
-received_population = []
-generation = None
-evaluation_count = 0
-total_evaluation_count = 0
-current_best_score = 0
-foundCount = 0
-total_fitness = 0
-CONNECTION_COUNT = 2
-
 
 class Master(Thread):
     def __init__(self, init_ip, init_port, init_conn, index):
@@ -24,94 +12,140 @@ class Master(Thread):
         self.connection = init_conn
         self.connectionIndex = index
 
+    # Method to send data to both connected clients
     @staticmethod
     def slaves_send_data(data):
-        global connected_conns
+        global connected_conns  # list of connected clients
+        # Serialize data
         converted_data = pickle.dumps(data)
+        # Send data to both clients
         connected_conns[0].send(converted_data)
         connected_conns[1].send(converted_data)
 
+    # Method to process received data from clients
     def process_pop(self):
-        global generation
-        global evaluation_count
-        global current_best_score
-        global foundCount
-        global total_evaluation_count
-        global try_count
-        global total_fitness
+        global generation  # current population of agents
+        global evaluation_count  # number of iterations
+        global current_best_score  # best fitness score found so far
+        global foundCount  # number of times a solution has been found
+        global total_evaluation_count  # total number of iterations over all tries
+        global try_count  # number of tries
+        global total_fitness  # total fitness score of found solutions
 
+        # Increase iteration count
         evaluation_count += 1
+        # Update population in generation object with sorted received data
         generation.set_pop(self.get_sorted_pop())
 
+        # Check if a solution has been found
         if generation.best_agent.fitnessScore > 0.975:
+            # Draw the face represented by the solution
             util.draw_face(generation.best_agent.genome)
+            # Print information about the found solution
             print(
                 f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration with 2 '
                 f'different mutation chance')
+            # Add fitness score to total fitness score
             total_fitness += round(generation.best_agent.fitnessScore, 3)
+            # Check if this is the final try
             if foundCount < try_count:
+                # Increase found count
                 foundCount += 1
+                # Add iteration count to total iteration count
                 total_evaluation_count += evaluation_count
-                # reset part
+                # Reset iteration count, generation object, and send new population to clients
                 evaluation_count = 0
                 generation = util.Generation(10)
                 self.slaves_send_data(generation.population)
             else:
+                # Print final results and exit
                 print(
                     f'Found {try_count} times. The Average : {total_evaluation_count / try_count}. iteration with 2 '
                     f'different mutation chance. The Average of Fitness: {total_fitness / (try_count + 1)}')
                 exit()
         else:
+            # If a solution has not been found, send updated population to clients
             self.slaves_send_data(generation.population)
 
+    # Method to sort received data and return the top 10 elements
     @staticmethod
     def get_sorted_pop():
-        global received_population
+        global received_population  # list of received data from clients
+        # Create a dictionary mapping indices to received data
         mergedDictionary = {}
         for j in range(len(received_population)):
             mergedDictionary[j] = received_population[j]
-
+        # Sort the dictionary by fitness score in descending order
         sorted_population = sorted(mergedDictionary.values(), key=lambda agent: agent.calculate_fitness(), reverse=True)
+        # Return the top 10 elements
         sorted_population = sorted_population[:10]
+        # Clear received_population list
         received_population.clear()
 
         return sorted_population
 
+    # Method to listen for data from connected clients
     def slaves_listen(self):
-        global connected_conns
-        global received_population
-        global thread_lock
+        global connected_conns  # list of connected clients
+        global received_population  # list of received data from clients
+        global thread_lock  # lock to synchronize threads
         while True:
+            # Receive data from client
             data = self.connection.recv(100000)
+            # If no data received, continue
             if not data:
                 continue
+            # Deserialize received data
             converted_data = pickle.loads(data)
+            # Acquire lock
             thread_lock.acquire()
+            # Add received data to received_population list
             for _ in range(len(converted_data)):
                 received_population.append(converted_data[_])
+            # Release lock
             thread_lock.release()
+            # If 20 or more elements have been received, process data and send updated population to clients
             if len(received_population) >= 20:
                 self.process_pop()
 
+    # Method run when starting a thread
     def run(self):
-        global connected_conns
-        global generation
+        global connected_conns  # list of connected clients
+        global generation  # current population of agents
+        # If there are more than 1 connected clients, send initial population to clients
         if len(connected_conns) > 1:
             self.slaves_send_data(generation.population)
+        # Listen for data from clients
         self.slaves_listen()
 
 
 if __name__ == '__main__':
+    try_count = 10  # number of tries
+    connected_conns = []  # list of connected clients
+    thread_lock = Lock()  # lock to synchronize threads
+    received_population = []  # list of received data from clients
+    evaluation_count = 0  # number of iterations
+    total_evaluation_count = 0  # total number of iterations over all tries
+    current_best_score = 0  # best fitness score found so far
+    foundCount = 0  # number of times a solution has been found
+    total_fitness = 0  # total fitness score of found solutions
+    CONNECTION_COUNT = 2  # number of expected connections
+
+    # Create initial generation of agents
     generation = util.Generation(10)
-    TCP_IP = 'localhost'
-    TCP_PORT = 12345
-    BUFFER_SIZE = 100000
+    TCP_IP = 'localhost'  # IP address of server
+    TCP_PORT = 12345  # port of server
+    BUFFER_SIZE = 100000  # buffer size for receiving data
+    # Create a TCP socket for the server
     tcpServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Bind the socket to the specified IP and port
     tcpServer.bind((TCP_IP, TCP_PORT))
-    threads = []
+    threads = []  # list of created threads
 
     print("Parallel Algorithm Started")
+    # Start listening for connections, allow up to CONNECTION_COUNT connections
     tcpServer.listen(CONNECTION_COUNT)
+    # Accept connections from clients and create a thread for each
     for i in range(CONNECTION_COUNT):
         (conn, (ip, port)) = tcpServer.accept()
         print('A slave connected!')
@@ -121,6 +155,6 @@ if __name__ == '__main__':
         thread_lock.release()
         masterThread.start()
         threads.append(masterThread)
-
+    # Keep the server running until all threads have finished
     for t in threads:
         t.join()
