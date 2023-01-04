@@ -1,3 +1,5 @@
+from _ast import Constant
+
 import tsp_util as tutil
 import pickle
 import socket
@@ -12,6 +14,8 @@ evolutionCount = 0
 totalEvolutionCount = 0
 currentBestScore = 0
 foundCount = 0
+
+CONNECTION_COUNT = 2
 
 
 class Master(Thread):
@@ -108,8 +112,8 @@ if __name__ == '__main__':
     threads = []
 
     print("Parallel Algorithm Started To Work")
-    tcpServer.listen(2)
-    for i in range(2):
+    tcpServer.listen(CONNECTION_COUNT)
+    for i in range(CONNECTION_COUNT):
         (conn, (ip, port)) = tcpServer.accept()
         print('A slave connected!')
         threadLock.acquire()
