@@ -17,7 +17,6 @@ class Slave:
             if data is None:
                 continue
             convertedData = pickle.loads(data)
-            print(f"\nreceived data: {convertedData}")
             self.generation.set_pop(convertedData)
             evolved = self.generation.evolve(10, self.mutationChance)
             self.send(init_tcp, evolved)
