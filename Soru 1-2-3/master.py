@@ -12,6 +12,8 @@ evaluation_count = 0
 total_evaluation_count = 0
 current_best_score = 0
 foundCount = 0
+total_fitness = 0
+CONNECTION_COUNT = 2
 
 
 class Master(Thread):
@@ -36,15 +38,17 @@ class Master(Thread):
         global foundCount
         global total_evaluation_count
         global try_count
+        global total_fitness
 
         evaluation_count += 1
         generation.set_pop(self.get_sorted_pop())
 
-        util.draw_face(generation.best_agent.genome)
-        if generation.best_agent.fitnessScore >= 0.95:
+        if generation.best_agent.fitnessScore > 0.925:
+            util.draw_face(generation.best_agent.genome)
             print(
                 f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration with 2 '
                 f'different mutation chance')
+            total_fitness += round(generation.best_agent.fitnessScore, 3)
             if foundCount < try_count:
                 foundCount += 1
                 total_evaluation_count += evaluation_count
@@ -55,7 +59,7 @@ class Master(Thread):
             else:
                 print(
                     f'Found {try_count} times. The Average : {total_evaluation_count / try_count}. iteration with 2 '
-                    f'different mutation chance')
+                    f'different mutation chance. The Average of Fitness: {total_fitness / (try_count + 1)}')
                 exit()
         else:
             self.slaves_send_data(generation.population)
@@ -106,9 +110,9 @@ if __name__ == '__main__':
     tcpServer.bind((TCP_IP, TCP_PORT))
     threads = []
 
-    print("Paralel Algorithm Started")
-    tcpServer.listen(2)
-    for i in range(2):
+    print("Parallel Algorithm Started")
+    tcpServer.listen(CONNECTION_COUNT)
+    for i in range(CONNECTION_COUNT):
         (conn, (ip, port)) = tcpServer.accept()
         print('A slave connected!')
         thread_lock.acquire()

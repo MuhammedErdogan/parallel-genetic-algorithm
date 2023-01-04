@@ -2,6 +2,8 @@ import socket
 import face_util as util
 import pickle
 
+generation = None
+
 
 class Slave:
     def __init__(self, chance):
