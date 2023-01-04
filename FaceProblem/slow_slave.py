@@ -5,11 +5,11 @@ import pickle
 generation = None
 
 
-class Slave:
+class SlowSlave:
     def __init__(self, chance):
         self.generation = util.Generation(10)
         self.mutationChance = chance
-        self.name = f'Slave P : %{self.mutationChance * 100}'
+        self.name = f'Slow Slave P : %{self.mutationChance * 100}'
 
     def listen(self, init_tcp):
         while True:
@@ -38,4 +38,4 @@ class Slave:
 
 
 if __name__ == '__main__':
-    Slave(.1).start()
+    SlowSlave(.1).start()

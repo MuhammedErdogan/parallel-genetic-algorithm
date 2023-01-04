@@ -38,7 +38,7 @@ class Master(Thread):
         generation.set_pop(self.get_sorted_pop())
 
         # Check if a solution has been found
-        if generation.best_agent.fitnessScore > 0.975:
+        if generation.best_agent.fitnessScore > 0.965:
             # Draw the face represented by the solution
             util.draw_face(generation.best_agent.genome)
             # Print information about the found solution
