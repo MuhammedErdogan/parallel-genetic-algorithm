@@ -30,9 +30,6 @@ class Agent:
     def create_gene(self):
         return np.random.rand(self.genome_size) * 10
 
-    def set_gene(self, new_gene):
-        self.genome = new_gene
-
     def calculate_fitness(self):
         error = (TARGETED_GENE - self.genome)
         self.fitnessScore = 1 / (1 + np.dot(error, error))
@@ -69,17 +66,12 @@ class Generation:
             self.reproduction_probability[i] = self.success[i] / total_success
 
     def selection(self):
-        productionProbability = [self.reproduction_probability[i] for i in range(self.agentNumber)]
-        select = np.random.choice(self.agentNumber, 2, replace=False, p=productionProbability)
-        return select
+        return np.random.choice(self.agentNumber, 2, replace=False, p=[self.reproduction_probability[i] for i in range(self.agentNumber)])
 
-    def crossover(self, selected_parents):
-        parent0 = self.population[selected_parents[0]].genome
-        parent1 = self.population[selected_parents[1]].genome
-
-        cut = np.random.randint(20)
-        child_gene = np.hstack((parent0[:cut], parent1[cut:]))
-        return child_gene
+    @staticmethod
+    def crossover(selected_genome_1, selected_genome_2):
+        crossover_point = np.random.randint(20)
+        return np.hstack((selected_genome_1[:crossover_point], selected_genome_2[crossover_point:]))
 
     def mutation(self, child_gene):
         if np.random.rand() < self.mutationChance:
@@ -89,7 +81,7 @@ class Generation:
 
     def child_creation(self):
         parents = self.selection()
-        child_gene = self.crossover(parents)
+        child_gene = self.crossover(self.population[parents[0]].genome, self.population[parents[0]].genome)
         child_gene = self.mutation(child_gene)
         return child_gene
 
@@ -98,9 +90,8 @@ class Generation:
         self.best_agent = self.population[sorted_by_success[-1][0]]
 
         for i in range(self.agentNumber // 2):
-            child_gene = self.child_creation()
             agent_id = sorted_by_success[i][0]
-            self.population[agent_id].set_gene(child_gene)
+            self.population[agent_id].genome = self.child_creation()
 
         self.calculate_prob()
 

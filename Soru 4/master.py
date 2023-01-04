@@ -37,20 +37,19 @@ class Master(Thread):
         global tryCount
 
         evolutionCount += 1
-        generation.set_pop(self.get_sorted_pop())
+        generation.set_population(self.get_sorted_pop())
 
-        if generation.best_agent.calculate_fitness() >= 1600:
+        if generation.population_best().fitness >= 1600:
             print(
-                f'{round(generation.best_agent.calculate_fitness(), 3)} is found in {evolutionCount} iteration with 2 '
+                f'{round(generation.population_best().fitness, 3)} is found in {evolutionCount} iteration with 2 '
                 f'different mutation chances')
             if foundCount < tryCount:
                 foundCount += 1
                 totalEvolutionCount += evolutionCount
                 # reset part
                 evolutionCount = 0
-                generation = tutil.Generation()
+                generation = tutil.Generation(10)
                 self.slaves_send(generation.population)
-                # util.DrawFace(generation.best_agent.genome)
             else:
                 print(
                     f'Found {tryCount} times. The Average : {totalEvolutionCount/tryCount}. iteration with 2 '
@@ -66,14 +65,13 @@ class Master(Thread):
         for _ in range(len(receivedPopulation)):
             mergedDictionary[_] = receivedPopulation[_]
 
-        sorted_population = sorted(mergedDictionary.values(
-        ), key=lambda agent: agent.calculate_fitness(), reverse=True)
+        sorted_population = sorted(mergedDictionary.values(), key=lambda agent: agent.fitness, reverse=True)
         sorted_population = sorted_population[:10]
         receivedPopulation.clear()
 
         populationList = []
         for element in sorted_population:
-            populationList.append(element.individual)
+            populationList.append(element)
         return populationList
 
     def slaves_listen(self):
@@ -101,7 +99,7 @@ class Master(Thread):
 
 
 if __name__ == '__main__':
-    generation = tutil.Generation()
+    generation = tutil.Generation(10)
     TCP_IP = 'localhost'
     TCP_PORT = 12345
     BUFFER_SIZE = 100000

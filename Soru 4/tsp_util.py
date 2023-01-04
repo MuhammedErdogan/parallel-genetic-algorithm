@@ -1,198 +1,241 @@
 import random
-from math import *
 
-prices = [[1, 3, 3, 2, 10], [4, 8, 12, 6, 5], [
-    6, 2, 3, 10, 12], [4, 5, 5, 2, 6], [4, 15, 5, 4, 3]]
+import numpy as np
+
+CITY_COUNT = 5
+STOCKS = [30, 40, 20, 40, 20]
+CITY_PRICES = [
+    [1, 4, 6, 4, 4],
+    [3, 8, 2, 5, 15],
+    [3, 12, 3, 5, 5],
+    [2, 6, 10, 2, 4],
+    [10, 5, 12, 6, 3]
+]
+
+# GENETIC SEARCH CONFIGURATION #
+POP_SIZE = 10
+TRY_TO_MUTATE_COUNT = 200000
+
+# ADDITIONAL CONFIGURATION #
+ALLOW_RATE = 0.01
+ALLOW_SAME_INDIVIDUALS = True
 
 
 class Agent:
-    def __init__(self, individual, score):
-        self.individual = individual
-        self.score = score
+    def __init__(self, chromosome, generation_num):
+        self.chromosome = chromosome
+        self.fitness = self.fitness_func()
+        self.generation_number = generation_num
 
-    def calculate_fitness(self):
-        return self.score
+    def f_base_by_city(self, city_index):
+        income_by_city = 0
+        for stock_index in range(len(STOCKS)):
+            income_by_city += self.chromosome[stock_index][city_index] * CITY_PRICES[stock_index][city_index]
+        return income_by_city
 
+    def f_base(self):
+        if self.chromosome.count([]) != 0:
+            return 0
 
-def print_individual(population):
-    for i in range(5):
-        print(population[i])
+        income = 0
+        for city_index in range(CITY_COUNT):
+            income += self.f_base_by_city(city_index)
+        return income
 
+    def f1(self):
+        if self.chromosome.count([]) != 0:
+            return 0
 
-def f(a): return int((abs(a) + a) / 2)
+        is_visited_count = 0
+        for city_index in range(CITY_COUNT):
+            for stock_index in range(len(STOCKS)):
+                if self.chromosome[stock_index][city_index] == 0:
+                    continue
+
+                is_visited_count += 1
+                break
+
+        if is_visited_count == CITY_COUNT:
+            return 100
+
+        return 0
+
+    def f2(self):
+        if self.chromosome.count([]) != 0:
+            return 0
+
+        income = 0
+        for city_index in range(CITY_COUNT):
+            min_sold_stock = max(STOCKS)
+            max_sold_stock = 0
+            for stock_index in range(len(STOCKS)):
+                max_sold_stock = max(self.chromosome[stock_index][city_index], max_sold_stock)
+                min_sold_stock = min(self.chromosome[stock_index][city_index], min_sold_stock)
+
+            income += self.f_base_by_city(city_index) * max(20 - (max_sold_stock - min_sold_stock), 0) / 100
+        return income
+
+    def f3(self):
+        if self.chromosome.count([]) != 0:
+            return 0
+
+        sold_stock_count = []
+        for city_index in range(CITY_COUNT):
+            sold_stock_count_by_city = 0
+            for stock_index in range(len(STOCKS)):
+                sold_stock_count_by_city += self.chromosome[stock_index][city_index]
+            sold_stock_count.append(sold_stock_count_by_city)
+
+        return self.f_base() * (max((20 - (max(sold_stock_count) - min(sold_stock_count))), 0) / 100)
+
+    def fitness_func(self):
+        return self.f_base() + self.f1() + self.f2() + self.f3()
+
+    def __str__(self):
+        return f'Chromosome: {self.chromosome}, Fitness: {self.fitness}, Generation Number: {self.generation_number}'
 
 
 class Generation:
-    def __init__(self):
+    def __init__(self, generation_number):
         self.population = []
-        for i in range(10):
-            self.population.append(self.generate_individual())
+        self.generation_number = generation_number
 
-        self.best_agent = None
-        self.evolve(1)
+    def print_population(self):
+        print("\nInitial population: \nSTATE\t\t\tFITNESS VALUE\n")
+        for individual in self.population:
+            for i in range(len(STOCKS)):
+                for j in range(CITY_COUNT):
+                    print(individual.chromosome[i][j], end=" ")
+                if i == 0:
+                    print("\t\t\t", individual.fitness, end=" ")
+                print("\n", end="")
+            print("\n", end="")
+        print()
 
-    def set_pop(self, pop):
-        for i in range(len(pop)):
-            self.population[i] = pop[i]
-        self.find_best()
-
-    def find_best(self):
-        self.best_agent = Agent(self.population[0], self.calculate_fitness(self.population[0]))
-
-    @staticmethod
-    def generate_individual():
-        individual = [[], [], [], [], []]
-        stock = [30, 40, 20, 40, 20]
-
-        for i in range(4):
-            for j in range(5):
-                random_num = random.randint(0, stock[j])
-                individual[i].append(random_num)
-                stock[j] = stock[j] - random_num
-
-        for j in range(5):
-            individual[4].append(stock[j])
-
-        return individual
+    def set_population(self, population):
+        self.population = population
 
     @staticmethod
-    def calculate_fitness(sales):
-        global prices
-        # bir malın hangi şehre ne kadar verildiği
-        receives = [[], [], [], [], []]
-        percentages_b2 = []
-        # bir şehrin toplam ne kadar mal aldığı
-        itemcount = [0, 0, 0, 0, 0]
-        profits = [0, 0, 0, 0, 0]
+    def copy_matrix(matrix):
+        new_matrix = []
+        for i in range(len(matrix)):
+            new_matrix.append(matrix[i].copy())
+        return new_matrix
 
-        bonus1 = 0
-        bonus2 = 0
+    def mutated_chromosome(self, chromosome):
+        will_be_mutated_chromosome = self.copy_matrix(chromosome)
 
-        for city in sales:
-            if city.count(0) < 5:
-                bonus1 += 1
-
-            for i in range(5):
-                receives[i].append(city[i])
-                itemcount[sales.index(city)] += city[i]
-
-            percentages_b2.append(f(20 - (max(city) - min(city))))
-
-        percentage_b3 = (f(20 - (max(itemcount) - min(itemcount))))
-
-        for i in range(5):
-            for j in range(5):
-                profits[i] += receives[j][i] * prices[i][j]
-            bonus2 += profits[i] * (percentages_b2[i] / 100)
-
-        bonus3 = (percentage_b3 / 100) * sum(profits)
-
-        if bonus1 == 5:
-            bonus1 = 100
-
-        score = sum(profits) + bonus1 + bonus2 + bonus3
-        return score
-
-    def evolve(self, mut_prob):
-        global prices
-        newPopulation = []
-        selectionChance = []
-        allFitnessScores = []
-        selectedCouples = [[], [], [], [], []]
-        agentList = {}
-
-        for i in range(10):
-            allFitnessScores.append(self.calculate_fitness(self.population[i]))
-
-        for i in range(10):
-            if i == 0:
-                selectionChance.append(
-                    allFitnessScores[i] / sum(allFitnessScores))
-            else:
-                selectionChance.append(
-                    (selectionChance[i - 1] + (allFitnessScores[i] / sum(allFitnessScores))))
-
-        for j in range(10):
-            randomint = random.random()
-            for i in range(9):
-                if 0 < randomint <= selectionChance[0]:
-                    selectedCouples[floor(j / 2)].append(self.population[0])
-                    # selectedCouples[floor(j / 2)].append(0)
+        for stock_index in range(len(STOCKS)):
+            while True:
+                rand_index_1 = random.randint(0, len(STOCKS) - 1)
+                rand_index_2 = random.randint(0, len(STOCKS) - 1)
+                if rand_index_2 != rand_index_1:
+                    total_stock_2_city = will_be_mutated_chromosome[stock_index][rand_index_1] + \
+                                         will_be_mutated_chromosome[stock_index][rand_index_2]
+                    if total_stock_2_city == 0:
+                        break
+                    will_be_mutated_chromosome[stock_index][rand_index_2] = random.randint(0, total_stock_2_city)
+                    will_be_mutated_chromosome[stock_index][rand_index_1] = total_stock_2_city - \
+                                                                            will_be_mutated_chromosome[stock_index][
+                                                                                rand_index_2]
                     break
-                elif selectionChance[i] < randomint <= selectionChance[i + 1]:
-                    selectedCouples[floor(
-                        j / 2)].append(self.population[i + 1])
-                    # selectedCouples[floor(j / 2)].append(i+1)
 
-        # crossover
-        for i in range(5):
-            if random.random() < 0.5:
-                columNumb1 = random.randint(0, 4)
-                columNumb2 = random.randint(0, 4)
+        return will_be_mutated_chromosome
 
-                for j in range(5):
-                    tempColomn1 = selectedCouples[i][0][j][columNumb1]
-                    selectedCouples[i][0][j][columNumb1] = selectedCouples[i][1][j][columNumb1]
-                    selectedCouples[i][1][j][columNumb1] = tempColomn1
+    @staticmethod
+    def create_chromosome():
+        chromosome = [[0] * 5, [0] * 5, [0] * 5, [0] * 5, [0] * 5]
+        copied_stocks = STOCKS.copy()
 
-                    tempColomn2 = selectedCouples[i][0][j][columNumb2]
-                    selectedCouples[i][0][j][columNumb2] = selectedCouples[i][1][j][columNumb2]
-                    selectedCouples[i][1][j][columNumb2] = tempColomn2
+        while sum(copied_stocks) != 0:
+            copied_stocks = STOCKS.copy()
+            for stock_index in range(len(STOCKS)):
+                for city_index in range(CITY_COUNT):
+                    chromosome[stock_index][city_index] = random.randint(0, copied_stocks[stock_index])
+                    copied_stocks[stock_index] -= chromosome[stock_index][city_index]
 
-            else:
-                columNumb1 = random.randint(0, 4)
+        return chromosome
 
-                for j in range(5):
-                    tempColomn1 = selectedCouples[i][0][j][columNumb1]
-                    selectedCouples[i][0][j][columNumb1] = selectedCouples[i][1][j][columNumb1]
-                    selectedCouples[i][1][j][columNumb1] = tempColomn1
+    def crossover(self, chromosome1, chromosome2):
+        copied_chromosome = self.copy_matrix(chromosome1)
+        cross_point = random.randint(0, len(STOCKS) - 1)
+        for i in range(len(STOCKS)):
+            if i >= cross_point:
+                copied_chromosome[i] = chromosome2[i]
+        return copied_chromosome
 
-        # mutation
-        for i in range(5):
-            if random.random() < mut_prob:
-                if random.random() < 0.5:
-                    columNumb1 = random.randint(0, 4)
-                    city1 = random.randint(0, 4)
-                    city2 = random.randint(0, 4)
-                    # print(f"mutation1 : {printIndv(selectedCouples[i][1])} ")
-                    mutatiomValue = random.randint(floor(selectedCouples[i][1][city1][columNumb1] / 2),
-                                                   selectedCouples[i][1][city1][columNumb1])
+    def crossover_for_pop(self):
+        next_generation = []
+        total_fitness = sum([individual.fitness for individual in self.population])
+        weighted_selection = [individual.fitness / total_fitness for individual in self.population]
+        for _ in range(0, POP_SIZE):
+            draw2 = np.random.choice(self.population, 2, p=weighted_selection)
+            next_generation.append(Agent(self.crossover(draw2[0].chromosome, draw2[1].chromosome), 0))
+        return next_generation
 
-                    if (selectedCouples[i][1][city1][columNumb1] - mutatiomValue) > 0:
-                        selectedCouples[i][1][city1][columNumb1] = selectedCouples[i][1][city1][
-                                                                       columNumb1] - mutatiomValue
-                        selectedCouples[i][1][city2][columNumb1] = selectedCouples[i][1][city2][
-                                                                       columNumb1] + mutatiomValue
-                else:
-                    columNumb1 = random.randint(0, 4)
-                    city1 = random.randint(0, 4)
-                    city2 = random.randint(0, 4)
-                    # print(f"mutation2 : {printIndv(selectedCouples[i][0])}")
-                    mutatiomValue = random.randint(floor(selectedCouples[i][0][city1][columNumb1] / 2),
-                                                   selectedCouples[i][0][city1][columNumb1])
+    def population_best(self):
+        best = self.population[0]
+        for individual in self.population:
+            if individual.fitness > best.fitness:
+                best = individual
+        return best
 
-                    if (selectedCouples[i][0][city1][columNumb1] - mutatiomValue) > 0:
-                        selectedCouples[i][0][city1][columNumb1] = selectedCouples[i][0][city1][
-                                                                       columNumb1] - mutatiomValue
-                        selectedCouples[i][0][city2][columNumb1] = selectedCouples[i][0][city2][
-                                                                       columNumb1] + mutatiomValue
+    def evolve(self, mutation_chance):
+        best_chromosome = Agent([[], [], [], [], []], 0)
 
-        for i in range(5):
-            for j in range(2):
-                currrentIndv = selectedCouples[i][j]
+        for _ in range(POP_SIZE):
+            current_individual = Agent(self.create_chromosome(), 0)
+            self.population.append(current_individual)
 
-                agentList[2 * i + j] = Agent(currrentIndv,
-                                             self.calculate_fitness(currrentIndv))
+        # self.print_population()
 
-        agentList = sorted(
-            agentList.values(), key=lambda agent: agent.score, reverse=True)
+        for i in range(self.generation_number):
+            if all([individual.fitness == self.population[0].fitness for individual in self.population]):
+                canBeMutatedFurther = False
+                for _ in range(TRY_TO_MUTATE_COUNT):
+                    temp = Agent(self.mutated_chromosome(self.population[0].chromosome), self.population[0].generation_number)
+                    if self.population[0].fitness < temp.fitness:
+                        canBeMutatedFurther = True
+                        self.population[0].chromosome = self.copy_matrix(temp.chromosome)
+                        self.population[0].fitness = temp.fitness
+                        break
+                if not canBeMutatedFurther:
+                    break
 
-        self.set_pop(newPopulation)
+            next_pop = []
+            crossover_pop = self.crossover_for_pop().copy()
+            crossover_pop.sort(key=lambda x: x.fitness, reverse=False)
 
-        self.best_agent = agentList[0]
+            for k in range(POP_SIZE):
+                current = self.population[k]
+                next_chromosome = crossover_pop[k]
+                next_chromosome.generation_number = current.generation_number + 1
 
-        return agentList
+                while True:
+                    if random.random() < mutation_chance:
+                        next_chromosome.chromosome = self.mutated_chromosome(next_chromosome.chromosome)
+                        next_chromosome.fitness = next_chromosome.fitness_func()
 
+                    if next_chromosome.fitness > current.fitness:
+                        next_pop.append(next_chromosome)
+                        break
+                    else:
+                        if random.random() < ALLOW_RATE:
+                            next_pop.append(next_chromosome)
+                            break
+                        elif ALLOW_SAME_INDIVIDUALS:
+                            next_pop.append(current)
+                            break
 
-generation = Generation()
-generation.evolve(0.3)
+            self.population = next_pop.copy()
+            self.population.sort(key=lambda x: x.fitness, reverse=True)
+
+            population_best = self.population_best()
+            print(population_best)
+
+            if best_chromosome.fitness <= population_best.fitness:
+                best_chromosome.chromosome = self.copy_matrix(population_best.chromosome)
+                best_chromosome.fitness = population_best.fitness
+                best_chromosome.generation_number = population_best.generation_number
+
+        return self.population

@@ -5,10 +5,10 @@ import pickle
 generation = None
 
 
-class Slave:
+class SlowSlave:
     def __init__(self, chance):
         self.mutationChance = chance
-        self.name = f'Slave P : %{self.mutationChance * 100}'
+        self.name = f'Slow Slave P : %{self.mutationChance * 100}'
 
     def listen(self, tcp):
         global generation
@@ -17,7 +17,7 @@ class Slave:
             if data is None:
                 continue
             convertedData = pickle.loads(data)
-            generation.set_pop(convertedData)
+            generation.set_population(convertedData)
             evolved = generation.evolve(self.mutationChance)
             self.send(tcp, evolved)
 
@@ -38,7 +38,6 @@ class Slave:
 
 
 if __name__ == '__main__':
-    mutationChance = float(input("What is mutation chance? : "))
-    generation = tutil.Generation()
-    c1 = Slave(mutationChance)
+    generation = tutil.Generation(10)
+    c1 = SlowSlave(.1)
     c1.start()
