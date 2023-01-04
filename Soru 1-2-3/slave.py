@@ -1,5 +1,5 @@
 import socket
-import util as util
+import face_util as util
 import pickle
 
 generation = None
@@ -31,7 +31,7 @@ class Slave:
 
     def start(self):
         host = 'localhost'
-        port = 2004
+        port = 12345
 
         tcpServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcpServer.connect((host, port))

@@ -1,4 +1,4 @@
-import util as util
+import face_util as util
 import pickle
 import socket
 from threading import Thread, Lock
@@ -100,7 +100,7 @@ class Master(Thread):
 if __name__ == '__main__':
     generation = util.Generation(10)
     TCP_IP = 'localhost'
-    TCP_PORT = 2004
+    TCP_PORT = 12345
     BUFFER_SIZE = 100000
     tcpServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcpServer.bind((TCP_IP, TCP_PORT))
