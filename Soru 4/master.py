@@ -101,32 +101,6 @@ class Master(Thread):
 
 
 if __name__ == '__main__':
-    # To draw the current best, print util.DrawFace(generation.best_agent.genome)
-    # If bottom line is commented, it will use parallel algorithm, otherwise it will use normal algorithm
-    """
-    #Normal Version
-
-    generation = tutil.Generation()
-    currentMutationChance = 0.9
-    #standart algorithm 
-    print("Standart Algorithm Started To Work")
-    while foundCount < tryCount:
-        while generation.best_agent.Fitness() <= 1500:
-            evolved = generation.Evolve(currentMutationChance)
-            evolutionCount += 1
-
-
-        print(f'{round(generation.best_agent.Fitness(),3)} is found in {evolutionCount} iteration. Mutation chance : %{currentMutationChance * 100}')
-        totalEvolutionCount += evolutionCount
-        foundCount+=1
-        #reset part
-        evolutionCount = 0
-        generation = tutil.Generation()
-
-    print(f'found {tryCount} times. The Average : {totalEvolutionCount/tryCount} with %{currentMutationChance * 100} mutation chance')
-
-    """
-    # Paralel versiyon
     generation = tutil.Generation()
     TCP_IP = 'localhost'
     TCP_PORT = 2004
@@ -135,7 +109,7 @@ if __name__ == '__main__':
     tcpServer.bind((TCP_IP, TCP_PORT))
     threads = []
 
-    print("Paralel Algorithm Started To Work")
+    print("Parallel Algorithm Started To Work")
     tcpServer.listen(2)
     for i in range(2):
         (conn, (ip, port)) = tcpServer.accept()
@@ -149,4 +123,3 @@ if __name__ == '__main__':
 
     for t in threads:
         t.join()
-   # """

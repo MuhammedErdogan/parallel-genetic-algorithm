@@ -64,8 +64,8 @@ class Master(Thread):
     def get_sorted_pop():
         global received_population
         mergedDictionary = {}
-        for i in range(len(received_population)):
-            mergedDictionary[i] = received_population[i]
+        for j in range(len(received_population)):
+            mergedDictionary[j] = received_population[j]
 
         sorted_population = sorted(mergedDictionary.values(), key=lambda agent: agent.calculate_fitness(), reverse=True)
         sorted_population = sorted_population[:10]
@@ -98,32 +98,6 @@ class Master(Thread):
 
 
 if __name__ == '__main__':
-    # To draw the current best, print util.DrawFace(generation.best_agent.genome)
-    # If bottom line is commented, it will use parallel algorithm, otherwise it will use normal algorithm
-    """
-    #Normal Version
-
-    generation = util.Generation(10)
-    currentMutationChance = 0.9
-    #standart algorithm 
-    print("Standart Algorithm Started To Work")
-    while foundCount < try_count:
-        while generation.best_agent.fitnessScore <= 0.95:
-            evolved = generation.Evolve(10,currentMutationChance)
-            evaluation_count += 1
-            
-            
-        print(f'{round(generation.best_agent.fitnessScore,3)} is found in {evaluation_count} iteration. Mutation chance : %{currentMutationChance * 100}')
-        total_evaluation_count += evaluation_count
-        foundCount+=1
-        #reset part
-        evaluation_count = 0
-        generation = util.Generation(10)
-    
-    print(f'Found {try_count} times. The Average : {total_evaluation_count/try_count}')
-
-    """
-    # Paralel versiyon
     generation = util.Generation(10)
     TCP_IP = 'localhost'
     TCP_PORT = 2004
@@ -132,7 +106,7 @@ if __name__ == '__main__':
     tcpServer.bind((TCP_IP, TCP_PORT))
     threads = []
 
-    print("Paralel Algorithm Started To Work")
+    print("Paralel Algorithm Started")
     tcpServer.listen(2)
     for i in range(2):
         (conn, (ip, port)) = tcpServer.accept()
@@ -146,4 +120,3 @@ if __name__ == '__main__':
 
     for t in threads:
         t.join()
-# """
