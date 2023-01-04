@@ -2,24 +2,22 @@ import socket
 import face_util as util
 import pickle
 
-generation = None
-
 
 class Slave:
     def __init__(self, chance):
+        self.generation = util.Generation(10)
         self.mutationChance = chance
         self.name = f'Slave P : %{self.mutationChance * 100}'
 
     def listen(self, init_tcp):
-        global generation
         while True:
             data = init_tcp.recv(100000)
             if data is None:
                 continue
             convertedData = pickle.loads(data)
             print(f"\nreceived data: {convertedData}")
-            generation.set_pop(convertedData)
-            evolved = generation.evolve(10, self.mutationChance)
+            self.generation.set_pop(convertedData)
+            evolved = self.generation.evolve(10, self.mutationChance)
             self.send(init_tcp, evolved)
 
     @staticmethod
@@ -39,8 +37,4 @@ class Slave:
 
 
 if __name__ == '__main__':
-    mutationChance = .1
-    print(mutationChance, "generation creation started.")
-    generation = util.Generation(10)
-    c1 = Slave(mutationChance)
-    c1.start()
+    Slave(.1).start()
