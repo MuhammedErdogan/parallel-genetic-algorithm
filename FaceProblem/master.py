@@ -38,7 +38,7 @@ class Master(Thread):
         generation.set_pop(self.get_sorted_pop())
 
         # Check if a solution has been found
-        if generation.best_agent.fitnessScore > 0.965:
+        if generation.best_agent.fitnessScore > 0.98:
             # Draw the face represented by the solution
             util.draw_face(generation.best_agent.genome)
             # Print information about the found solution
@@ -142,6 +142,25 @@ if __name__ == '__main__':
     tcpServer.bind((TCP_IP, TCP_PORT))
     threads = []  # list of created threads
 
+    """
+    print("Standart Algorithm Started To Work")
+    currentMutationChance = 0.1
+    while foundCount < try_count:
+        while generation.best_agent.fitnessScore <= 0.95:
+            evolved = generation.evolve(10, currentMutationChance)
+            evaluation_count += 1
+
+        print(
+            f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration. Mutation chance : %{currentMutationChance * 100}')
+        total_evaluation_count += evaluation_count
+        foundCount += 1
+        # reset part
+        evolutionCount = 0
+        generation = util.Generation(10)
+
+    print(f'Found {try_count} times. The Average : {total_evaluation_count / try_count}')
+    """
+
     print("Parallel Algorithm Started")
     # Start listening for connections, allow up to CONNECTION_COUNT connections
     tcpServer.listen(CONNECTION_COUNT)
@@ -158,3 +177,4 @@ if __name__ == '__main__':
     # Keep the server running until all threads have finished
     for t in threads:
         t.join()
+    #"""

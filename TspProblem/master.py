@@ -43,7 +43,7 @@ class Master(Thread):
         evolutionCount += 1
         generation.set_population(self.get_sorted_pop())
 
-        if generation.population_best().fitness >= 1600:
+        if generation.population_best().fitness >= 1700:
             print(
                 f'{round(generation.population_best().fitness, 3)} is found in {evolutionCount} iteration with 2 '
                 f'different mutation chances')
@@ -104,6 +104,28 @@ class Master(Thread):
 
 if __name__ == '__main__':
     generation = tutil.Generation(10)
+
+    """
+    print("Standart Algorithm Started To Work")
+    currentMutationChance = 0.1
+    evolved = generation.evolve(currentMutationChance)
+    evolutionCount += 1
+    while foundCount < tryCount:
+        while evolved[0].fitness <= 1700:
+            evolved = generation.evolve(currentMutationChance)
+            evolutionCount += 1
+
+        print(
+            f'{round(evolved[0].fitness, 3)} is found in {evolutionCount} iteration. Mutation chance : %{currentMutationChance * 100}')
+        totalEvolutionCount += evolutionCount
+        foundCount += 1
+        # reset part
+        evolutionCount = 0
+        generation = tutil.Generation(10)
+
+    print(f'Found {tryCount} times. The Average : {totalEvolutionCount / tryCount}')
+    
+    """
     TCP_IP = 'localhost'
     TCP_PORT = 12345
     BUFFER_SIZE = 100000
@@ -125,3 +147,4 @@ if __name__ == '__main__':
 
     for t in threads:
         t.join()
+    #"""

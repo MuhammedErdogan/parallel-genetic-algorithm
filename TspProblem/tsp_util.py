@@ -174,6 +174,8 @@ class Generation:
         return next_generation
 
     def population_best(self):
+        if len(self.population) == 0:
+            return None
         best = self.population[0]
         for individual in self.population:
             if individual.fitness > best.fitness:
