@@ -1,3 +1,4 @@
+import time
 from _ast import Constant
 
 import tsp_util as tutil
@@ -16,6 +17,9 @@ currentBestScore = 0
 foundCount = 0
 
 CONNECTION_COUNT = 2
+
+start = time.time()
+end = time.time()
 
 
 class Master(Thread):
@@ -45,8 +49,7 @@ class Master(Thread):
 
         if generation.population_best().fitness >= 1700:
             print(
-                f'{round(generation.population_best().fitness, 3)} is found in {evolutionCount} iteration with 2 '
-                f'different mutation chances')
+                f'{round(generation.population_best().fitness, 3)} is found in {evolutionCount}')
             if foundCount < tryCount:
                 foundCount += 1
                 totalEvolutionCount += evolutionCount
@@ -56,8 +59,9 @@ class Master(Thread):
                 self.slaves_send(generation.population)
             else:
                 print(
-                    f'Found {tryCount} times. The Average : {totalEvolutionCount/tryCount}. iteration with 2 '
-                    f'different mutation chances')
+                    f'Found {tryCount} times. The Average : {totalEvolutionCount/tryCount}')
+                end = time.time()
+                print(f'Time : {end - start}')
                 exit()
         else:
             self.slaves_send(generation.population)
@@ -102,15 +106,22 @@ class Master(Thread):
         self.slaves_listen()
 
 
-if __name__ == '__main__':
+def standard_algo():
+    tryCount = 10  # number of tries
+    evolutionCount = 0  # number of iterations
+    totalEvolutionCount = 0  # total number of iterations over all tries
+    foundCount = 0  # number of times a solution has been found
+
+    # Create initial generation of agents
     generation = tutil.Generation(10)
 
-    """
     print("Standart Algorithm Started To Work")
+    start = time.time()
     currentMutationChance = 0.1
     evolved = generation.evolve(currentMutationChance)
     evolutionCount += 1
     while foundCount < tryCount:
+        currentMutationChance += 0.05
         while evolved[0].fitness <= 1700:
             evolved = generation.evolve(currentMutationChance)
             evolutionCount += 1
@@ -124,8 +135,17 @@ if __name__ == '__main__':
         generation = tutil.Generation(10)
 
     print(f'Found {tryCount} times. The Average : {totalEvolutionCount / tryCount}')
-    
+    end = time.time()
+    print(f'Time : {end - start}')
+
+
+if __name__ == '__main__':
+    standard_algo()
+
     """
+    generation = tutil.Generation(10)
+
+
     TCP_IP = 'localhost'
     TCP_PORT = 12345
     BUFFER_SIZE = 100000
@@ -144,7 +164,7 @@ if __name__ == '__main__':
         threadLock.release()
         masterThread.start()
         threads.append(masterThread)
-
+    start = time.time()
     for t in threads:
         t.join()
     #"""

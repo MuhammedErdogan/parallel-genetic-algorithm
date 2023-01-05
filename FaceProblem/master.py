@@ -1,8 +1,12 @@
+import time
+
 import face_util as util
 import pickle
 import socket
 from threading import Thread, Lock
 
+start = time.time()
+end = time.time()
 
 class Master(Thread):
     def __init__(self, init_ip, init_port, init_conn, index):
@@ -38,13 +42,12 @@ class Master(Thread):
         generation.set_pop(self.get_sorted_pop())
 
         # Check if a solution has been found
-        if generation.best_agent.fitnessScore > 0.98:
+        if generation.best_agent.fitnessScore > 0.975:
             # Draw the face represented by the solution
             util.draw_face(generation.best_agent.genome)
             # Print information about the found solution
             print(
-                f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration with 2 '
-                f'different mutation chance')
+                f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count}')
             # Add fitness score to total fitness score
             total_fitness += round(generation.best_agent.fitnessScore, 3)
             # Check if this is the final try
@@ -57,15 +60,18 @@ class Master(Thread):
                 evaluation_count = 0
                 generation = util.Generation(10)
                 self.slaves_send_data(generation.population)
+                return False
             else:
                 # Print final results and exit
                 print(
-                    f'Found {try_count} times. The Average : {total_evaluation_count / try_count}. iteration with 2 '
-                    f'different mutation chance. The Average of Fitness: {total_fitness / (try_count + 1)}')
+                    f'Found {try_count} times. The Average : {total_evaluation_count / try_count}. The Average of Fitness: {total_fitness / (try_count + 1)}')
+                end = time.time()
+                print(f'Time: {end - start}')
                 exit()
         else:
             # If a solution has not been found, send updated population to clients
             self.slaves_send_data(generation.population)
+            return False
 
     # Method to sort received data and return the top 10 elements
     @staticmethod
@@ -106,7 +112,9 @@ class Master(Thread):
             thread_lock.release()
             # If 20 or more elements have been received, process data and send updated population to clients
             if len(received_population) >= 20:
-                self.process_pop()
+                control = self.process_pop()
+                if control:
+                    return True
 
     # Method run when starting a thread
     def run(self):
@@ -116,10 +124,46 @@ class Master(Thread):
         if len(connected_conns) > 1:
             self.slaves_send_data(generation.population)
         # Listen for data from clients
-        self.slaves_listen()
+        control = self.slaves_listen()
+        if control:
+            return
+
+
+def standart_algo():
+    try_count = 10  # number of tries
+    evaluation_count = 0  # number of iterations
+    total_evaluation_count = 0  # total number of iterations over all tries
+    foundCount = 0  # number of times a solution has been found
+
+    # Create initial generation of agents
+    generation = util.Generation(10)
+
+    print("Standart Algorithm Started To Work")
+    start = time.time()
+    currentMutationChance = 0.45
+    while foundCount < try_count:
+        currentMutationChance += 0.05
+        while generation.best_agent.fitnessScore <= 0.975:
+            generation.evolve(10, currentMutationChance)
+            evaluation_count += 1
+
+        print(
+            f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration. Mutation chance : %{currentMutationChance * 100}')
+        total_evaluation_count += evaluation_count
+        foundCount += 1
+        # reset part
+        evolutionCount = 0
+        generation = util.Generation(10)
+
+    print(f'Found {try_count} times. The Average : {total_evaluation_count / try_count}')
+    end = time.time()
+    print(f'Time : {end - start}')
 
 
 if __name__ == '__main__':
+    standart_algo()
+
+    """
     try_count = 10  # number of tries
     connected_conns = []  # list of connected clients
     thread_lock = Lock()  # lock to synchronize threads
@@ -133,6 +177,7 @@ if __name__ == '__main__':
 
     # Create initial generation of agents
     generation = util.Generation(10)
+    
     TCP_IP = 'localhost'  # IP address of server
     TCP_PORT = 12345  # port of server
     BUFFER_SIZE = 100000  # buffer size for receiving data
@@ -141,25 +186,6 @@ if __name__ == '__main__':
     # Bind the socket to the specified IP and port
     tcpServer.bind((TCP_IP, TCP_PORT))
     threads = []  # list of created threads
-
-    """
-    print("Standart Algorithm Started To Work")
-    currentMutationChance = 0.1
-    while foundCount < try_count:
-        while generation.best_agent.fitnessScore <= 0.95:
-            evolved = generation.evolve(10, currentMutationChance)
-            evaluation_count += 1
-
-        print(
-            f'{round(generation.best_agent.fitnessScore, 3)} is found in {evaluation_count} iteration. Mutation chance : %{currentMutationChance * 100}')
-        total_evaluation_count += evaluation_count
-        foundCount += 1
-        # reset part
-        evolutionCount = 0
-        generation = util.Generation(10)
-
-    print(f'Found {try_count} times. The Average : {total_evaluation_count / try_count}')
-    """
 
     print("Parallel Algorithm Started")
     # Start listening for connections, allow up to CONNECTION_COUNT connections
@@ -175,6 +201,7 @@ if __name__ == '__main__':
         masterThread.start()
         threads.append(masterThread)
     # Keep the server running until all threads have finished
+    start = time.time()
     for t in threads:
         t.join()
     #"""
